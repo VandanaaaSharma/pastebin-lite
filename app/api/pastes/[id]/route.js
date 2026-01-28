@@ -5,22 +5,16 @@ export async function GET(request, { params }) {
   const { id } = await params;
 
   let paste;
-
   try {
     paste = await redis.get(`paste:${id}`);
   } catch (error) {
-    // 🚑 Redis not reachable (Upstash / env issue)
+    console.error("Redis error:", error);
     return NextResponse.json(
-      {
-        content: "Sample paste content (Redis not available)",
-        remaining_views: 1,
-        expires_at: null,
-      },
-      { status: 200 }
+      { error: "Redis connection failed" },
+      { status: 500 }
     );
   }
 
-  // 1️⃣ Paste not found
   if (!paste) {
     return NextResponse.json(
       { error: "Paste not found" },
@@ -31,7 +25,6 @@ export async function GET(request, { params }) {
   const { content, expires_at, remaining_views } = paste;
   const now = Date.now();
 
-  // 2️⃣ TTL expired
   if (expires_at !== null && now > expires_at) {
     await redis.del(`paste:${id}`);
     return NextResponse.json(
@@ -40,7 +33,6 @@ export async function GET(request, { params }) {
     );
   }
 
-  // 3️⃣ View limit exceeded
   if (remaining_views <= 0) {
     await redis.del(`paste:${id}`);
     return NextResponse.json(
@@ -49,13 +41,11 @@ export async function GET(request, { params }) {
     );
   }
 
-  // 4️⃣ Decrement views
   await redis.set(`paste:${id}`, {
     ...paste,
     remaining_views: remaining_views - 1,
   });
 
-  // 5️⃣ Return paste
   return NextResponse.json(
     {
       content,
