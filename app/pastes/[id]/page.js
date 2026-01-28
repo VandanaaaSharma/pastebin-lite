@@ -4,7 +4,7 @@ export default async function PastePage({ params }) {
   const { id } = await params;
 
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/pastes/${id}`,
+    `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/pastes/${id}`,
     { cache: "no-store" }
   );
 
