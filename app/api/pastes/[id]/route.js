@@ -6,7 +6,7 @@ export async function GET(request, { params }) {
 
   let paste;
   try {
-    paste = await redis.get(`paste:${id}`);
+    paste = redis.get(`paste:${id}`);
   } catch (error) {
     console.error("Redis error:", error);
     return NextResponse.json(
