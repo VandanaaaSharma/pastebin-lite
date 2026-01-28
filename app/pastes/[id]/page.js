@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
 
 export default async function PastePage({ params }) {
+  // ✅ REQUIRED in Next.js 14+
   const { id } = await params;
 
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/pastes/${id}`,
-    { cache: "no-store" }
-  );
+  const res = await fetch(`/api/pastes/${id}`, {
+    cache: "no-store",
+  });
 
   if (!res.ok) notFound();
 
@@ -15,16 +15,13 @@ export default async function PastePage({ params }) {
   return (
     <main style={container}>
       <div style={card}>
-        {/* Header */}
         <div style={header}>
           <span style={icon}>📄</span>
           <h2 style={{ margin: 0 }}>Shared Paste</h2>
         </div>
 
-        {/* Content */}
         <pre style={codeBox}>{content}</pre>
 
-        {/* Meta info */}
         <div style={meta}>
           <span>👁 Remaining views: {remaining_views}</span>
           {expires_at && (
@@ -41,8 +38,8 @@ export default async function PastePage({ params }) {
 const container = {
   minHeight: "100vh",
   display: "flex",
-  alignItems: "center",      // ✅ vertical center
-  justifyContent: "center",  // ✅ horizontal center
+  alignItems: "center",
+  justifyContent: "center",
   padding: "1rem",
 };
 
