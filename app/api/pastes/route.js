@@ -5,6 +5,7 @@ import crypto from "crypto";
 export async function POST(request) {
   let body;
 
+  // STEP 0: Parse JSON safely
   try {
     body = await request.json();
   } catch {
@@ -16,7 +17,7 @@ export async function POST(request) {
 
   const { content, ttl_seconds, max_views } = body;
 
-  // Validation (from previous step)
+  // STEP 1: Validation
   if (typeof content !== "string" || content.trim() === "") {
     return NextResponse.json(
       { error: "content must be a non-empty string" },
@@ -44,33 +45,40 @@ export async function POST(request) {
     );
   }
 
-  // STEP A: Generate unique ID
+  // STEP 2: Generate ID
   const id = crypto.randomUUID();
-
-  // STEP B: Time calculations
   const now = Date.now();
+
+  // STEP 3: Calculate expiry timestamp
   const expires_at =
     ttl_seconds !== undefined ? now + ttl_seconds * 1000 : null;
 
-  // STEP C: Create paste object
+  // STEP 4: Create paste object
   const paste = {
     content,
     created_at: now,
     expires_at,
-    remaining_views: max_views ?? null,
+    remaining_views: max_views ?? Infinity,
   };
 
-  // STEP D: Save to Redis
-  await redis.set(`paste:${id}`, paste);
+  // STEP 5: Save to Redis (IMPORTANT FIX)
+  if (ttl_seconds !== undefined) {
+    // Set Redis TTL so key auto-expires
+    await redis.set(`paste:${id}`, paste, {
+      ex: ttl_seconds,
+    });
+  } else {
+    await redis.set(`paste:${id}`, paste);
+  }
 
-  // STEP E: Return response
+  // STEP 6: Return response
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
   return NextResponse.json(
     {
       id,
-      url: `${baseUrl}/p/${id}`,
+      url: `${baseUrl}/pastes/${id}`,
     },
     { status: 200 }
   );

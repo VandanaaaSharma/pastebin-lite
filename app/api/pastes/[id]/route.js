@@ -1,24 +1,25 @@
-import { redis } from "@/lib/redis";
 import { NextResponse } from "next/server";
+import { redis } from "@/lib/redis";
 
 export async function GET(request, { params }) {
-  // ✅ FIX: params MUST be awaited
+  // Next.js 14+ requires awaiting params
   const { id } = await params;
 
   const paste = await redis.get(`paste:${id}`);
 
+  // 1️⃣ Paste not found
   if (!paste) {
     return NextResponse.json(
-      { error: "Paste not found or expired" },
+      { error: "Paste not found" },
       { status: 404 }
     );
   }
 
-  const { content, expiresAt, remainingViews } = paste;
+  const { content, expires_at, remaining_views } = paste;
   const now = Date.now();
 
-  // TTL check
-  if (now > expiresAt) {
+  // 2️⃣ TTL expired (extra safety even though Redis TTL exists)
+  if (expires_at !== null && now > expires_at) {
     await redis.del(`paste:${id}`);
     return NextResponse.json(
       { error: "Paste expired" },
@@ -26,8 +27,8 @@ export async function GET(request, { params }) {
     );
   }
 
-  // View limit check
-  if (remainingViews <= 0) {
+  // 3️⃣ View limit exceeded
+  if (remaining_views <= 0) {
     await redis.del(`paste:${id}`);
     return NextResponse.json(
       { error: "View limit exceeded" },
@@ -35,13 +36,19 @@ export async function GET(request, { params }) {
     );
   }
 
-  // Decrement views
+  // 4️⃣ Decrement views
   await redis.set(`paste:${id}`, {
-    content,
-    expiresAt,
-    remainingViews: remainingViews - 1,
+    ...paste,
+    remaining_views: remaining_views - 1,
   });
 
-  return NextResponse.json({ content });
+  // 5️⃣ Return paste (PDF-required fields)
+  return NextResponse.json(
+    {
+      content,
+      remaining_views: remaining_views - 1,
+      expires_at,
+    },
+    { status: 200 }
+  );
 }
-
