@@ -45,7 +45,7 @@ export async function POST(request) {
     );
   }
 
-  // STEP 2: Generate ID
+  // STEP 2: Generate unique ID
   const id = crypto.randomUUID();
   const now = Date.now();
 
@@ -58,17 +58,18 @@ export async function POST(request) {
     content,
     created_at: now,
     expires_at,
-    remaining_views: max_views ?? Infinity,
+    remaining_views: max_views ?? null,
   };
 
   // STEP 5: Save to Redis
   if (ttl_seconds !== undefined) {
+    // Redis key auto-expires
     await redis.set(`paste:${id}`, paste, { ex: ttl_seconds });
   } else {
     await redis.set(`paste:${id}`, paste);
   }
 
-  // ✅ STEP 6: FIXED URL GENERATION (IMPORTANT)
+  // STEP 6: Generate correct URL (WORKS ON PHONE + PROD)
   const origin = request.headers.get("origin");
 
   return NextResponse.json(
