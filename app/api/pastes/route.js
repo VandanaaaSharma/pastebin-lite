@@ -61,24 +61,20 @@ export async function POST(request) {
     remaining_views: max_views ?? Infinity,
   };
 
-  // STEP 5: Save to Redis (IMPORTANT FIX)
+  // STEP 5: Save to Redis
   if (ttl_seconds !== undefined) {
-    // Set Redis TTL so key auto-expires
-    await redis.set(`paste:${id}`, paste, {
-      ex: ttl_seconds,
-    });
+    await redis.set(`paste:${id}`, paste, { ex: ttl_seconds });
   } else {
     await redis.set(`paste:${id}`, paste);
   }
 
-  // STEP 6: Return response
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  // ✅ STEP 6: FIXED URL GENERATION (IMPORTANT)
+  const origin = request.headers.get("origin");
 
   return NextResponse.json(
     {
       id,
-      url: `${baseUrl}/pastes/${id}`,
+      url: `${origin}/pastes/${id}`,
     },
     { status: 200 }
   );
