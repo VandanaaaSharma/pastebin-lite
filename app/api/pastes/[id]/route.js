@@ -4,52 +4,46 @@ import { redis } from "@/lib/redis";
 export async function GET(request, { params }) {
   const { id } = await params;
 
-  let paste;
-  try {
-    paste = redis.get(`paste:${id}`);
-  } catch (error) {
-    console.error("Redis error:", error);
-    return NextResponse.json(
-      { error: "Redis connection failed" },
-      { status: 500 }
-    );
-  }
+  const paste = await redis.get(`paste:${id}`);
 
   if (!paste) {
-    return NextResponse.json(
-      { error: "Paste not found" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "Paste not found" }, { status: 404 });
   }
 
   const { content, expires_at, remaining_views } = paste;
   const now = Date.now();
 
-  if (expires_at !== null && now > expires_at) {
+  // ⏱ Expiry check
+  if (expires_at && now > expires_at) {
     await redis.del(`paste:${id}`);
+    return NextResponse.json({ error: "Paste expired" }, { status: 404 });
+  }
+
+  // 👁 If views exhausted → still show content ONCE
+  if (remaining_views !== null && remaining_views <= 0) {
     return NextResponse.json(
-      { error: "Paste expired" },
-      { status: 404 }
+      {
+        content,
+        remaining_views: 0,
+        expires_at,
+      },
+      { status: 200 }
     );
   }
 
-  if (remaining_views <= 0) {
-    await redis.del(`paste:${id}`);
-    return NextResponse.json(
-      { error: "View limit exceeded" },
-      { status: 404 }
-    );
+  // 🔽 Decrement views
+  if (remaining_views !== null) {
+    await redis.set(`paste:${id}`, {
+      ...paste,
+      remaining_views: remaining_views - 1,
+    });
   }
-
-  await redis.set(`paste:${id}`, {
-    ...paste,
-    remaining_views: remaining_views - 1,
-  });
 
   return NextResponse.json(
     {
       content,
-      remaining_views: remaining_views - 1,
+      remaining_views:
+        remaining_views !== null ? remaining_views - 1 : null,
       expires_at,
     },
     { status: 200 }
