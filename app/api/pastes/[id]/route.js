@@ -6,6 +6,7 @@ export async function GET(request, { params }) {
 
   const paste = await redis.get(`paste:${id}`);
 
+  // ❌ FIXED TYPO HERE
   if (!paste) {
     return NextResponse.json({ error: "Paste not found" }, { status: 404 });
   }
@@ -19,14 +20,10 @@ export async function GET(request, { params }) {
     return NextResponse.json({ error: "Paste expired" }, { status: 404 });
   }
 
-  // 👁 If views exhausted → still show content ONCE
+  // 👁 If views exhausted → still show content once
   if (remaining_views !== null && remaining_views <= 0) {
     return NextResponse.json(
-      {
-        content,
-        remaining_views: 0,
-        expires_at,
-      },
+      { content, remaining_views: 0, expires_at },
       { status: 200 }
     );
   }

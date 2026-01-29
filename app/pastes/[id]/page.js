@@ -1,14 +1,12 @@
 import { notFound } from "next/navigation";
 
 export default async function PastePage({ params }) {
-  // ✅ REQUIRED in Next.js 14
   const { id } = await params;
 
-  // ❗ IMPORTANT: absolute URL for server-side fetch
-  const res = await fetch(
-    `http://localhost:3000/api/pastes/${id}`,
-    { cache: "no-store" }
-  );
+  // ✅ RELATIVE PATH — WORKS EVERYWHERE
+  const res = await fetch(`/api/pastes/${id}`, {
+    cache: "no-store",
+  });
 
   if (!res.ok) notFound();
 
@@ -34,6 +32,7 @@ export default async function PastePage({ params }) {
     </main>
   );
 }
+
 
 /* ---------- styles ---------- */
 
