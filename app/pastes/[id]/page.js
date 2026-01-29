@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 export default async function PastePage({ params }) {
   const { id } = await params;
 
-  // ✅ RELATIVE PATH — WORKS EVERYWHERE
   const res = await fetch(`/api/pastes/${id}`, {
     cache: "no-store",
   });
@@ -13,22 +12,24 @@ export default async function PastePage({ params }) {
   const { content, remaining_views, expires_at } = await res.json();
 
   return (
-    <main style={container}>
-      <div style={card}>
-        <div style={header}>
-          <span style={icon}>📄</span>
-          <h2 style={{ margin: 0 }}>Shared Paste</h2>
-        </div>
+    <main style={{ padding: "2rem" }}>
+      <h1>📄 Shared Paste</h1>
 
-        <pre style={codeBox}>{content}</pre>
+      <pre
+        style={{
+          background: "#f8fafc",
+          padding: "1rem",
+          borderRadius: "8px",
+        }}
+      >
+        {content}
+      </pre>
 
-        <div style={meta}>
-          <span>👁 Remaining views: {remaining_views}</span>
-          {expires_at && (
-            <span>⏱ Expires: {new Date(expires_at).toLocaleString()}</span>
-          )}
-        </div>
-      </div>
+      <p>👁 Remaining views: {remaining_views ?? "∞"}</p>
+
+      {expires_at && (
+        <p>⏱ Expires: {new Date(expires_at).toLocaleString()}</p>
+      )}
     </main>
   );
 }
