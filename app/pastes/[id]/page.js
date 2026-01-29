@@ -1,19 +1,21 @@
 import { notFound } from "next/navigation";
+import { redis } from "@/lib/redis";
 
 export default async function PastePage({ params }) {
   const { id } = await params;
 
-  // ✅ INTERNAL FETCH (NO BASE URL NEEDED)
-  const res = await fetch(
-    new URL(`/api/pastes/${id}`, process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000"),
-    { cache: "no-store" }
-  );
+  const paste = await redis.get(`paste:${id}`);
 
-  if (!res.ok) notFound();
+  if (!paste) notFound();
 
-  const { content, remaining_views, expires_at } = await res.json();
+  const { content, expires_at, remaining_views } = paste;
+  const now = Date.now();
+
+  // Expired
+  if (expires_at && now > expires_at) {
+    await redis.del(`paste:${id}`);
+    notFound();
+  }
 
   return (
     <main style={container}>
@@ -36,7 +38,7 @@ export default async function PastePage({ params }) {
   );
 }
 
-/* styles unchanged */
+/* styles */
 const container = {
   minHeight: "100vh",
   display: "flex",
@@ -44,6 +46,7 @@ const container = {
   justifyContent: "center",
   padding: "1rem",
 };
+
 const card = {
   width: "100%",
   maxWidth: "800px",
@@ -52,13 +55,16 @@ const card = {
   padding: "2rem",
   boxShadow: "0 25px 50px rgba(0,0,0,0.1)",
 };
+
 const header = {
   display: "flex",
   alignItems: "center",
   gap: "0.5rem",
   marginBottom: "1rem",
 };
+
 const icon = { fontSize: "1.4rem" };
+
 const codeBox = {
   background: "#f8fafc",
   borderRadius: "16px",
@@ -69,6 +75,7 @@ const codeBox = {
   border: "1px solid #e5e7eb",
   marginBottom: "1rem",
 };
+
 const meta = {
   display: "flex",
   justifyContent: "space-between",
