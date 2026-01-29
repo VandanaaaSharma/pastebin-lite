@@ -3,40 +3,40 @@ import { notFound } from "next/navigation";
 export default async function PastePage({ params }) {
   const { id } = await params;
 
-  const res = await fetch(`/api/pastes/${id}`, {
-    cache: "no-store",
-  });
+  // ✅ INTERNAL FETCH (NO BASE URL NEEDED)
+  const res = await fetch(
+    new URL(`/api/pastes/${id}`, process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000"),
+    { cache: "no-store" }
+  );
 
   if (!res.ok) notFound();
 
   const { content, remaining_views, expires_at } = await res.json();
 
   return (
-    <main style={{ padding: "2rem" }}>
-      <h1>📄 Shared Paste</h1>
+    <main style={container}>
+      <div style={card}>
+        <div style={header}>
+          <span style={icon}>📄</span>
+          <h2 style={{ margin: 0 }}>Shared Paste</h2>
+        </div>
 
-      <pre
-        style={{
-          background: "#f8fafc",
-          padding: "1rem",
-          borderRadius: "8px",
-        }}
-      >
-        {content}
-      </pre>
+        <pre style={codeBox}>{content}</pre>
 
-      <p>👁 Remaining views: {remaining_views ?? "∞"}</p>
-
-      {expires_at && (
-        <p>⏱ Expires: {new Date(expires_at).toLocaleString()}</p>
-      )}
+        <div style={meta}>
+          <span>👁 Remaining views: {remaining_views ?? "∞"}</span>
+          {expires_at && (
+            <span>⏱ Expires: {new Date(expires_at).toLocaleString()}</span>
+          )}
+        </div>
+      </div>
     </main>
   );
 }
 
-
-/* ---------- styles ---------- */
-
+/* styles unchanged */
 const container = {
   minHeight: "100vh",
   display: "flex",
@@ -44,7 +44,6 @@ const container = {
   justifyContent: "center",
   padding: "1rem",
 };
-
 const card = {
   width: "100%",
   maxWidth: "800px",
@@ -53,18 +52,13 @@ const card = {
   padding: "2rem",
   boxShadow: "0 25px 50px rgba(0,0,0,0.1)",
 };
-
 const header = {
   display: "flex",
   alignItems: "center",
   gap: "0.5rem",
   marginBottom: "1rem",
 };
-
-const icon = {
-  fontSize: "1.4rem",
-};
-
+const icon = { fontSize: "1.4rem" };
 const codeBox = {
   background: "#f8fafc",
   borderRadius: "16px",
@@ -75,7 +69,6 @@ const codeBox = {
   border: "1px solid #e5e7eb",
   marginBottom: "1rem",
 };
-
 const meta = {
   display: "flex",
   justifyContent: "space-between",

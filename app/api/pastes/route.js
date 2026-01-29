@@ -7,10 +7,7 @@ export async function POST(request) {
   const { content, ttl_seconds, max_views } = body;
 
   if (!content || typeof content !== "string") {
-    return NextResponse.json(
-      { error: "Content is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Content is required" }, { status: 400 });
   }
 
   const id = crypto.randomUUID();
