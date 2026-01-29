@@ -30,8 +30,13 @@ export default async function PastePage({ params }) {
         <div style={meta}>
           <span>👁 Remaining views: {remaining_views ?? "∞"}</span>
           {expires_at && (
-            <span>⏱ Expires: {new Date(expires_at).toLocaleString()}</span>
-          )}
+  <span>
+    ⏱ Expires:{" "}
+    {new Date(expires_at).toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+    })}
+  </span>
+)}
         </div>
       </div>
     </main>
